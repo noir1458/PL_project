@@ -1,10 +1,8 @@
-#define _CRT_SECURE_NO_WARNINGS
-
 #include<iostream>
 #include<fstream>
 #include <cstring>
 #include <cctype>
-#include <cstdio>
+
 
 using namespace std;
 
@@ -16,7 +14,7 @@ char nextChar;
 int lexLen;
 int token;
 int nextToken;
-FILE* in_fp;
+FILE* in_fp, * fopen();
 
 // 함수 선언들
 void addChar();
@@ -42,23 +40,13 @@ int lookup(char ch);
 #define RIGHT_PAREN 26
 
 //*********** 
-int main(int argc, char* argv[]) {
-	// 입력 파일 이름
-	const char* inputFileName;
-
-	if (argc > 1) {
-		inputFileName = argv[1];
-	}
-	else {
-		cout << "명령줄 인자 제공 필요" << endl;
-		return 1;
-	}
-
-	cout << "입력 파일 : " << inputFileName << endl;
+int main() {
+	ofstream fout; //cpp 입출력
+	fout.open("input1.txt");
 
 	//입력 데이터 내용을 열고 그 내용을 처리
-	if ((in_fp = fopen(inputFileName, "r")) == NULL)
-		cout << "ERROR - cannot open" << inputFileName << endl;
+	if ((in_fp = fopen("front.in", "r")) == NULL)
+		cout << "ERROR - cannot open front.in" << endl;
 	else {
 		getChar();
 		do {
@@ -94,10 +82,6 @@ int lookup(char ch) {
 	case '/':
 		addChar();
 		nextToken = DIV_OP;
-		break;
-	case '=':
-		addChar();
-		nextToken = ASSIGN_OP; // = 문자 처리
 		break;
 	default:
 		addChar();
@@ -180,10 +164,10 @@ int lex() {
 		lexeme[0] = 'E';
 		lexeme[1] = 'O';
 		lexeme[2] = 'F';
-		lexeme[3] = '\0';
+		lexeme[3] = 0;
 		break;
 	} //switch의 끝
 
-	cout << "Next token is : " << nextToken << ", Next lexeme is : " << lexeme << endl;
+	cout << "Next token is : " << nextToken << ", Next lexeme is" << lexeme << endl;
 	return nextToken;
 }

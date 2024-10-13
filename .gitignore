@@ -1,0 +1,39 @@
+# Visual Studio 관련
+.vs/
+*.user
+*.suo
+*.VC.db
+*.VC.opendb
+
+# 빌드 관련
+*.exe
+*.ilk
+*.pdb
+*.ipch
+*.obj
+*.tlog
+*.log
+*.lastbuildstate
+*.idb
+*.opendb
+
+# 프로젝트 설정 파일
+*.filters
+*.sln
+*.vcxproj
+*.vcxproj.user
+
+# 임시 파일
+*.tmp
+*.cache
+*.bak
+*.swp
+
+# OS별 파일
+.DS_Store
+Thumbs.db
+
+# 기타 디렉토리
+x64/
+Debug/
+Release/
