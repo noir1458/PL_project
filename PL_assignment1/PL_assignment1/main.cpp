@@ -16,8 +16,7 @@ int main(int argc, char* argv[]) {
         }
         else {
             getChar();  // 어휘 분석기의 첫 번째 문자를 읽음
-            lexical();      // 첫 번째 토큰을 가져옴
-            program();  // 구문 분석을 시작 (program() 함수 호출)
+            lexical();            program();
         }
         fclose(in_fp);  // 입력 파일 닫기
     }
