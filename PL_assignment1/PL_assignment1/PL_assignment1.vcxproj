@@ -127,7 +127,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="LexicalAnalyzer.h" />
+    <ClInclude Include="LexicalAnalyzer.h" />
     <ClCompile Include="LexicalAnalyzer.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="SyntaxAnalyzer.cpp" />
