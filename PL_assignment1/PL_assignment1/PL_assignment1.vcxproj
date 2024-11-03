@@ -127,7 +127,13 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="PLassignment.cpp" />
+    <ClCompile Include="LexicalAnalyzer.h" />
+    <ClCompile Include="LexicalAnalyzer.cpp" />
+    <ClCompile Include="main.cpp" />
+    <ClCompile Include="SyntaxAnalyzer.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="SyntaxAnalyzer.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
