@@ -8,13 +8,13 @@ using namespace std;
 // 전역 변수 정의 (여기서만 정의)
 SymbolTable symTable[100];  // 심볼 테이블 배열 정의
 int symTableSize = 0;       // 심볼 테이블 크기 변수 정의
-int charClass;
+int charClass = 0;
 char lexeme[100];
-char nextChar;
-int lexLen;
-int token;
-int nextToken;
-FILE* in_fp;
+char nextChar = ' ';
+int lexLen = 0;
+int token = 0;
+int nextToken = 0;
+FILE* in_fp = NULL;
 
 // lookup - 연산자와 괄호를 조사하여 그 토큰을 반환하는 함수
 int lookup(char ch) {
