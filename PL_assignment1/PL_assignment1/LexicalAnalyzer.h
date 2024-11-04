@@ -3,16 +3,6 @@
 
 #include <cstdio>
 
-// 심볼 테이블을 위한 구조체
-struct SymbolTable {
-    char name[100];
-    int value;
-    bool isDefined;
-};
-
-// 전역 변수 선언 (extern 사용)
-extern SymbolTable symTable[100];   // 전역 구조체 배열 선언
-extern int symTableSize;            // 심볼 테이블 크기 선언
 extern int charClass;
 extern char lexeme[100];
 extern char nextChar;

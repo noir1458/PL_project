@@ -5,9 +5,6 @@
 
 using namespace std;
 
-// 전역 변수 정의 (여기서만 정의)
-SymbolTable symTable[100];  // 심볼 테이블 배열 정의
-int symTableSize = 0;       // 심볼 테이블 크기 변수 정의
 int charClass = 0;
 char lexeme[100];
 char nextChar = ' ';
@@ -53,6 +50,10 @@ int lookup(char ch) {
         else {
             nextToken = UNKNOWN;  // 잘못된 연산자 처리
         }
+        break;
+    case '=':
+        addChar();
+        nextToken = ASSIGN_OP;
         break;
     case ';':
         addChar();
@@ -151,6 +152,8 @@ int lexical() {
     else {
         cout << lexeme << " ";  // 그 외의 경우 공백 포함 출력
     }
+
+    cout << "Token: " << nextToken << ", Lexeme: " << lexeme << endl;
 
     return nextToken;
 }

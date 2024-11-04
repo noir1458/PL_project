@@ -6,235 +6,205 @@
 
 using namespace std;
 
-// 전역 변수로 ID, CONST, OP 개수 추적
-int idCount = 0;
-int constCount = 0;
-int opCount = 0;
+// 심볼 테이블 정의
+SymbolTable symTable[100];
+int symTableSize = 0;
 
-// 전역 변수로 statement 오류 발생 추적
-bool statementError;
-bool statementWarning;
-
-// 각 카운터 초기화
-void resetCounts() {
-    idCount = 0;
-    constCount = 0;
-    opCount = 0;
-}
-
-// 심볼 테이블 출력 함수
-void printSymbolTable() {
-    cout << "Result ==> ";
+// 심볼 테이블에서 변수 검색 또는 생성
+SymbolTable* findOrCreateSymbol(const char* name) {
     for (int i = 0; i < symTableSize; i++) {
-        cout << symTable[i].name << ": ";
-        if (symTable[i].value == 99) {
-            cout << "Unknown";  // UNKNOWN 값 출력
-        }
-        else {
-            cout << symTable[i].value;
-        }
-        if (i < symTableSize - 1) {
-            cout << "; ";
+        if (strcmp(symTable[i].name, name) == 0) {
+            return &symTable[i];
         }
     }
-    cout << ";" << endl;
+    // 심볼 테이블에 새 항목 추가
+    strcpy(symTable[symTableSize].name, name);
+    symTable[symTableSize].value = 0;  // 기본값
+    symTable[symTableSize].isDefined = false;
+    return &symTable[symTableSize++];
+}
+
+// 심볼 테이블에 값 업데이트
+void updateSymbolTable(const char* variable, int value) {
+    SymbolTable* symbol = findOrCreateSymbol(variable);
+    symbol->value = value;
+    symbol->isDefined = true;
+}
+
+// 트리 노드를 생성하고 반환하는 함수
+ParseTreeNode* createNode(int token, const char* valueText) {
+    return new ParseTreeNode(token, valueText);
+}
+
+// 부모 노드에 자식 노드를 추가하는 함수
+void addChild(ParseTreeNode* parent, ParseTreeNode* child) {
+    // 부모 노드에 자식이 하나도 없으면 바로 자식노드로 추가
+    if (!parent->child) {
+        parent->child = child;
+    }
+    // 부모 노드에 자식이 하나라도 있다면, 마지막 자식 노드(첫 자식 노드의 제일 마지막 sibling)의 sibling으로 추가
+    else {
+        ParseTreeNode* current = parent->child;
+        while (current->sibling) {
+            current = current->sibling;
+        }
+        current->sibling = child;
+    }
+}
+
+// 트리를 출력하는 함수 (재귀적으로 출력)
+void printTree(ParseTreeNode* root, int level) {
+    if (!root) return;
+    for (int i = 0; i < level; i++) cout << "  ";
+    cout << root->value << " (" << root->token << ")" << endl;
+    printTree(root->child, level + 1);
+    printTree(root->sibling, level);
+}
+
+// 파싱 트리 메모리 해제 함수
+void freeTree(ParseTreeNode* root) {
+    if (!root) return;
+    freeTree(root->child);
+    freeTree(root->sibling);
+    delete root;
 }
 
 // <program> → <statements>
-void program() {
-    statements();
-    printSymbolTable();  // 심볼 테이블 출력
+ParseTreeNode* program() {
+    ParseTreeNode* root = createNode(0, "Program");
+    addChild(root, statements());
+    return root;
 }
 
 // <statements> → <statement> { ; <statement> }
-void statements() {
-    statement();
+ParseTreeNode* statements() {
+    ParseTreeNode* node = createNode(0, "Statements");
+    addChild(node, statement());
     while (nextToken == SEMI_COLON) {
-        lexical();  // ';' 처리
-        statement();  // 다음 <statement> 처리
+        lexical();  // 세미콜론 처리
+        addChild(node, statement());  // 다음 statement 추가
     }
-
+    return node;
 }
 
 // <statement> → <ident> <assignment_op> <expression>
-void statement() {
-    resetCounts();
-    statementError = false;
-    statementWarning = false;
+ParseTreeNode* statement() {
+    ParseTreeNode* node = createNode(0, "Statement");
 
     if (nextToken == IDENT) {
-        idCount++;  // 식별자 개수 증가
-        char variable[100];
-        strcpy(variable, lexeme);  // 식별자 이름 복사
-        lexical();  // 식별자 처리 후 다음 토큰 읽기
+        char* variable = new char[strlen(lexeme) + 1];
+        strcpy(variable, lexeme);  // lexeme의 내용을 복사
+        ParseTreeNode* varNode = createNode(IDENT, variable);
+        addChild(node, varNode);
+        lexical();
 
         if (nextToken == ASSIGN_OP) {
-            lexical();  // 대입 연산자 처리
-            int exprValue = expression();  // 표현식 평가 후 값 반환
+            addChild(node, createNode(ASSIGN_OP, ":="));
+            lexical();
+            ParseTreeNode* exprNode = expression();
+            addChild(node, exprNode);
 
-            // 심볼 테이블에 식별자 값 업데이트
-            bool found = false;
-            for (int i = 0; i < symTableSize; i++) {
-                if (strcmp(symTable[i].name, variable) == 0) {
-                    found = true;
-                    symTable[i].value = exprValue;  // 계산된 값 저장
-                    symTable[i].isDefined = !statementError;
-                    break;
-                }
-            }
-            if (!found) {
-                strcpy(symTable[symTableSize].name, variable);  // 새 변수 추가
-                symTable[symTableSize].value = exprValue;
-                symTable[symTableSize].isDefined = !statementError;
-                symTableSize++;
-            }
-
-            // 구문 출력 및 ID, CONST, OP, (OK) 출력
-            cout << "ID: " << idCount << "; CONST: " << constCount << "; OP: " << opCount << ";" << endl;
-
-            // (OK) 또는 (Error) 출력
-            if (!statementError && !statementWarning) {
-                cout << "(OK)" << endl;
-            } 
-            
-            if (statementWarning) {
-                cout << "(Warning) \"중복 연산자 제거\"" << endl;
-            }
-            if (statementError) {
-                cout << "(Error) \"정의되지 않은 변수(" << variable << ")가 참조됨\"" << endl;
-            }
+            // 값 평가 후 심볼 테이블에 저장
+            int exprValue = evaluateExpression(exprNode);
+            updateSymbolTable(variable, exprValue);
         }
+
+        // 메모리 해제
+        delete[] variable;
     }
+    return node;
 }
 
-// <expression> → <term><term_tail>
-int expression() {
-    int result = term();  // 먼저 term 처리
-    result = term_tail(result);  // term_tail에서 추가적인 연산자 처리
-    return result;
+// <expression> → <term> <term_tail>
+ParseTreeNode* expression() {
+    ParseTreeNode* node = term();
+    return term_tail(node);
 }
 
-// <term> → <factor><factor_tail>
-int term() {
-    int result = factor();  // factor 처리
-    result = factor_tail(result);  // factor_tail에서 추가적인 연산자 처리
-    return result;
+// <term> → <factor> <factor_tail>
+ParseTreeNode* term() {
+    ParseTreeNode* node = factor();
+    return factor_tail(node);
 }
 
-// <term_tail> → <add_op><term><term_tail> | ε
-int term_tail(int leftValue) {
-    int result = leftValue;
-
-    // + 또는 - 연산자가 있는 경우에만 처리
+// <term_tail> → <add_op> <term> <term_tail> | ε
+ParseTreeNode* term_tail(ParseTreeNode* leftNode) {
     if (nextToken == ADD_OP || nextToken == SUB_OP) {
-        opCount++;  // 연산자 개수 증가
-        int operatorToken = nextToken;
-        lexical();  // 연산자 처리 후 다음 토큰으로 이동
-
-        // 중복된 연산자가 연속으로 오는지 확인
-        if (nextToken == ADD_OP || nextToken == SUB_OP || nextToken == MULT_OP || nextToken == DIV_OP) {
-            statementWarning = true;  // 중복 연산자 경고 설정
-            lexical();  // 중복 연산자 건너뜀
-        }
-
-        int rightValue = term();  // 다음 term 처리
-        if (result != UNKNOWN) {
-            if (operatorToken == ADD_OP) {
-                result += rightValue;
-            }
-            else if (operatorToken == SUB_OP) {
-                result -= rightValue;
-            }
-        }
-        
-        result = term_tail(result);  // 재귀적으로 다음 연산 처리
+        ParseTreeNode* operatorNode = createNode(nextToken, lexeme);
+        lexical();
+        addChild(operatorNode, leftNode);
+        addChild(operatorNode, term());
+        return term_tail(operatorNode);
     }
-
-    return result;
+    return leftNode;
 }
 
-// <factor> → <left_paren><expression><right_paren> | <ident> | <const>
-int factor() {
-    int result = 0;
+// <factor> → <left_paren> <expression> <right_paren> | <ident> | <const>
+ParseTreeNode* factor() {
+    ParseTreeNode* node = nullptr;
 
     if (nextToken == LEFT_PAREN) {
         lexical();  // '(' 처리
-        result = expression();  // 괄호 안의 표현식 처리
+        node = expression();  // 괄호 안의 표현식
         if (nextToken == RIGHT_PAREN) {
             lexical();  // ')' 처리
         }
     }
-    // 식별자 처리 (변수가 정의되었는지 확인)
     else if (nextToken == IDENT) {
-        idCount++;  // 식별자 개수 증가
-        bool found = false;
-        for (int i = 0; i < symTableSize; i++) {
-            if (strcmp(symTable[i].name, lexeme) == 0) {
-                found = true;
-                if (symTable[i].isDefined) {
-                    result = symTable[i].value;  // 정의된 변수의 값 사용
-                }
-                else {
-                    result = UNKNOWN;
-                }
-                break;
-            }
-        }
-        if (!found) {
-            // 변수가 심볼 테이블에 없으면 추가
-            strcpy(symTable[symTableSize].name, lexeme);  // 변수 추가
-            symTable[symTableSize].value = UNKNOWN;
-            symTable[symTableSize].isDefined = false;  // 정의되지 않음으로 설정
-            symTableSize++;
-            result = UNKNOWN;
-            statementError = true;
-        }
-        lexical();  // 식별자 처리 후 다음 토큰으로 이동
+        SymbolTable* symbol = findOrCreateSymbol(lexeme);
+        char* identifier = new char[strlen(lexeme) + 1];
+        strcpy(identifier, lexeme);
+        node = createNode(IDENT, identifier);
+        lexical();
     }
-    // 상수 처리
     else if (nextToken == INT_LIT) {
-        result = atoi(lexeme);  // 상수 값을 정수로 변환
-        constCount++;  // 상수 개수 증가
-        lexical();  // 상수 처리 후 다음 토큰으로 이동
+        char* intLit = new char[strlen(lexeme) + 1];
+        strcpy(intLit, lexeme);
+        node = createNode(INT_LIT, intLit);
+        lexical();
     }
 
-    return result;
+    return node;
 }
 
-// <factor_tail> → <mult_op><factor><factor_tail> | ε
-int factor_tail(int leftValue) {
-    int result = leftValue;
-
-    // * 또는 / 연산자가 있는 경우에만 처리
+// <factor_tail> → <mult_op> <factor> <factor_tail> | ε
+ParseTreeNode* factor_tail(ParseTreeNode* leftNode) {
     if (nextToken == MULT_OP || nextToken == DIV_OP) {
-        opCount++;
+        ParseTreeNode* operatorNode = createNode(nextToken, lexeme);
+        lexical();
+        addChild(operatorNode, leftNode);
+        addChild(operatorNode, factor());
+        return factor_tail(operatorNode);
+    }
+    return leftNode;
+}
 
-        int operatorToken = nextToken;
-        lexical();  // 연산자 처리 후 다음 토큰으로 이동
+// 트리를 평가하여 값을 계산하는 함수
+int evaluateExpression(ParseTreeNode* node) {
+    if (!node) return 0;
 
-        if (nextToken == ADD_OP || nextToken == SUB_OP || nextToken == MULT_OP || nextToken == DIV_OP) {
-            statementWarning = true;  // 중복 연산자 경고 설정
-            lexical();  // 중복 연산자 건너뜀
-        }
+    if (node->token == INT_LIT) return atoi(node->value);
 
-        int rightValue = factor();  // 다음 factor 값 계산
-
-        if (result != UNKNOWN && rightValue != UNKNOWN) {
-            // 연산자에 따른 연산 수행
-            if (operatorToken == MULT_OP) {
-                result *= rightValue;
-            }
-            else if (operatorToken == DIV_OP) {
-                if (rightValue == 0) {
-                    result = 0;
-                }
-                else {
-                    result /= rightValue;
-                }
-            }
-            result = factor_tail(result);  // 재귀적으로 다음 연산 처리
-        }
+    if (node->token == IDENT) {
+        SymbolTable* symbol = findOrCreateSymbol(node->value);
+        if (symbol->isDefined) return symbol->value;
+        cout << "Error: Undefined variable " << node->value << endl;
+        return 0;
     }
 
-    return result;
+    int leftValue = evaluateExpression(node->child);
+    int rightValue = evaluateExpression(node->child->sibling);
+
+    switch (node->token) {
+    case ADD_OP: return leftValue + rightValue;
+    case SUB_OP: return leftValue - rightValue;
+    case MULT_OP: return leftValue * rightValue;
+    case DIV_OP:
+        if (rightValue == 0) {
+            cout << "Error: Division by zero" << endl;
+            return 0;
+        }
+        return leftValue / rightValue;
+    default: return 0;
+    }
 }

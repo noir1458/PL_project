@@ -16,7 +16,16 @@ int main(int argc, char* argv[]) {
         }
         else {
             getChar();  // 어휘 분석기의 첫 번째 문자를 읽음
-            lexical();            program();
+            lexical();
+            
+            ParseTreeNode* root = program();
+
+            // 파싱 트리 출력
+            cout << "Parsing Tree:" << endl;
+            printTree(root);
+
+            // 파싱 트리 메모리 해제
+            freeTree(root);
         }
         fclose(in_fp);  // 입력 파일 닫기
     }
