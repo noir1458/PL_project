@@ -16,7 +16,12 @@ int main(int argc, char* argv[]) {
         }
         else {
             getChar();  // 어휘 분석기의 첫 번째 문자를 읽음
-            lexical();            program();
+            lexical();
+            
+            ParseTreeNode* root = program();
+            evaluateParseTree(root);  // 트리 평가
+            printSymbolTable();  // 최종 심볼 테이블 출력
+            freeTree(root);
         }
         fclose(in_fp);  // 입력 파일 닫기
     }

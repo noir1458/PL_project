@@ -5,9 +5,6 @@
 
 using namespace std;
 
-// 전역 변수 정의 (여기서만 정의)
-SymbolTable symTable[100];  // 심볼 테이블 배열 정의
-int symTableSize = 0;       // 심볼 테이블 크기 변수 정의
 int charClass = 0;
 char lexeme[100];
 char nextChar = ' ';
@@ -49,9 +46,6 @@ int lookup(char ch) {
         if (nextChar == '=') {
             addChar();
             nextToken = ASSIGN_OP;  // := 대입 연산자 처리
-        }
-        else {
-            nextToken = UNKNOWN;  // 잘못된 연산자 처리
         }
         break;
     case ';':
@@ -139,17 +133,6 @@ int lexical() {
             lexeme[2] = 'F';
             lexeme[3] = '\0';
             break;
-    }
-
-    // 구문 출력
-    if (nextToken == SEMI_COLON) {
-        cout << lexeme << endl;  // 세미콜론이면 줄바꿈 포함
-    }
-    else if (nextToken == EOF) {
-        cout << endl;   // EOF면 줄바꿈만 출력
-    }
-    else {
-        cout << lexeme << " ";  // 그 외의 경우 공백 포함 출력
     }
 
     return nextToken;
