@@ -5,6 +5,17 @@
 #include "LexicalAnalyzer.h"
 #include <cstring>
 
+#define OK 1
+#define WARNING 0
+#define ERROR -1
+
+extern int parseStatus;
+
+// 전역 변수로 ID, CONST, OP 개수 추적
+extern int idCount;
+extern int constCount;
+extern int opCount;
+
 // 심볼 테이블을 위한 구조체
 struct SymbolTable {
     char name[100];
@@ -17,8 +28,10 @@ extern SymbolTable symTable[100];   // 전역 구조체 배열 선언
 extern int symTableSize;            // 심볼 테이블 크기 선언
 
 // 심볼 테이블 관련 함수 선언
-SymbolTable* findOrCreateSymbol(const char* name);
+SymbolTable* createSymbol(const char* name);
+SymbolTable* findSymbol(const char* name);
 void updateSymbolTable(const char* variable, int value);
+void printSymbolTable();
 
 // 파싱 트리 노드 구조체
 struct ParseTreeNode {
@@ -40,10 +53,12 @@ struct ParseTreeNode {
     }
 };
 
+// 각 카운터 초기화
+void resetCounts();
+
 // 파싱 트리 관련 함수 선언
 ParseTreeNode* createNode(int token, const char* value);
 void addChild(ParseTreeNode* parent, ParseTreeNode* child);
-void printTree(ParseTreeNode* root, int level = 0);
 void freeTree(ParseTreeNode* root); // 메모리 해제를 위한 함수
 
 // 구문 분석 함수 선언
@@ -53,8 +68,8 @@ ParseTreeNode* statement();
 ParseTreeNode* expression();
 ParseTreeNode* term();
 ParseTreeNode* factor();
-ParseTreeNode* term_tail(ParseTreeNode* leftNode);
-ParseTreeNode* factor_tail(ParseTreeNode* leftNode);
-int evaluateExpression(ParseTreeNode* node);
+ParseTreeNode* term_tail();
+ParseTreeNode* factor_tail();
+int evaluateParseTree(ParseTreeNode* node, int leftValue = 0);
 
 #endif // SYNTAX_ANALYZER_H

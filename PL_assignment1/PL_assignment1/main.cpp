@@ -19,12 +19,8 @@ int main(int argc, char* argv[]) {
             lexical();
             
             ParseTreeNode* root = program();
-
-            // 파싱 트리 출력
-            cout << "Parsing Tree:" << endl;
-            printTree(root);
-
-            // 파싱 트리 메모리 해제
+            evaluateParseTree(root);  // 트리 평가
+            printSymbolTable();  // 최종 심볼 테이블 출력
             freeTree(root);
         }
         fclose(in_fp);  // 입력 파일 닫기
