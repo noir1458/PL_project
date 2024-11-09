@@ -7,3 +7,7 @@ operand1
 Result ==> ;
 (올바르게 처리 x)
 // 그냥 = 경우의 처리, operand1__3 의 경우 그냥 3 버리게 되는지 13이 되는지
+
+
+operand2 := 5 * (operand1 + 2);
+target := operand1 * operand2
