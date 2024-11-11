@@ -83,6 +83,11 @@ void getChar() {
         else {
             charClass = UNKNOWN;
         }
+
+        if (nextChar != 10) {
+            cout << nextChar;
+        }
+
     }
     else {
         charClass = EOF;

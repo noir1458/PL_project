@@ -19,8 +19,7 @@ int main(int argc, char* argv[]) {
             lexical();
             
             ParseTreeNode* root = program();
-            evaluateParseTree(root);  // 트리 평가
-            printSymbolTable();  // 최종 심볼 테이블 출력
+            // 파싱 후 결과 출력
             freeTree(root);
         }
         fclose(in_fp);  // 입력 파일 닫기
