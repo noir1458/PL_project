@@ -19,7 +19,7 @@ extern int opCount;
 
 // 심볼 구조체
 struct Symbol {
-    char name[100];
+    string name;
     int value;
     bool isDefined;
 };
@@ -37,17 +37,17 @@ struct SymbolTable {
     }
 
     // 심볼 생성 함수
-    Symbol* createSymbol(const char* name) {
-        strcpy(symbols[size].name, name);
+    Symbol* createSymbol(const string& name) {
+        symbols[size].name = name;
         symbols[size].value = 0;          // 기본값
         symbols[size].isDefined = false;
         return &symbols[size++];          // 새 심볼 반환 후 크기 증가
     }
 
     // 심볼 검색 함수
-    Symbol* findSymbol(const char* name) {
+    Symbol* findSymbol(const string& name) {
         for (int i = 0; i < size; i++) {
-            if (strcmp(symbols[i].name, name) == 0) {
+            if (symbols[i].name == name) {
                 return &symbols[i];
             }
         }
@@ -55,7 +55,7 @@ struct SymbolTable {
     }
 
     // 심볼 업데이트 함수
-    void updateSymbol(const char* variable, int value) {
+    void updateSymbol(const string& variable, int value) {
         Symbol* symbol = findSymbol(variable);
         if (symbol) {
             symbol->value = value;
@@ -86,22 +86,13 @@ struct ParseTreeNode {
     int value;                  // 노드의 값
     bool isDefined;             // 노드의 값이 초기화 되었는지 확인
     int status;                 // 노드의 상태 (OK, WARNING, ERROR 등)
-    char* message;              // 경고 및 오류 메시지 배열
+    string message;              // 경고 및 오류 메시지 배열
     ParseTreeNode* child;       // 현재 노드의 첫 번째 자식 (왼쪽 아래)
     ParseTreeNode* sibling;     // 가장 가까운 형제 노드 (바로 오른쪽)
 
     // 생성자
     ParseTreeNode(int token)
-        : token(token), value(0), isDefined(false), child(nullptr), sibling(nullptr) {
-        status = OK;                // 초기 상태는 "OK"
-        message = new char[5];
-        strcpy(message, "(OK)");    // 초기 상태는 "OK"
-    }
-
-    // 소멸자 (메모리 해제)
-    ~ParseTreeNode() {
-        delete[] message;
-    }
+        : token(token), value(0), isDefined(false), child(nullptr), sibling(nullptr), status(OK), message("(OK)") {}
 
     // 자식 노드 추가 함수
     void addChild(ParseTreeNode* childNode) {
@@ -126,18 +117,16 @@ struct ParseTreeNode {
     }
 
     // 상태 및 메시지 설정 함수
-    void setStatus(int newStatus, const char* newMessage) {
-        if (status > newStatus && newMessage != nullptr) {
+    void setStatus(int newStatus, const string& newMessage) {
+        if (status > newStatus) {
             status = newStatus;
-            delete[] message;
-            message = new char[strlen(newMessage) + 1];
-            strcpy(message, newMessage);
+            message = newMessage;
         }
     }
 
     // 메시지 출력
     void printMessage() const {
-        if (message != nullptr) {
+        if (!message.empty()) {
             cout << message << endl;
         }
     }

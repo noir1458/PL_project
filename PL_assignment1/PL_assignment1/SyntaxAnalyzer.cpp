@@ -56,15 +56,12 @@ ParseTreeNode* statements() {
 
         // 중복된 세미콜론 경고 처리
         while (nextToken == SEMI_COLON) {
-            node->setStatus(WARNING, "(WARNING) Warning: \"중복 세미콜론 제거\"");
+            node->setStatus(WARNING, "(Warning) \"중복 세미콜론(;) 제거\"");
             lexical();
         }
 
         statementNode = statement(); // 다음 statement 노드 생성
         node->addChild(statementNode); // STATEMENTS 노드에 다음 statement 추가
-    }
-    if (nextToken == EOF) {
-        node->addChild(new ParseTreeNode(EOF));
     }
 
     return node;
@@ -81,7 +78,7 @@ ParseTreeNode* statement() {
         idCount++;
         Symbol* symbol = symTable.findSymbol(lexeme);           // 심볼 테이블 lookup
         if (symbol == nullptr) {
-            Symbol* symbol = symTable.createSymbol(lexeme);     // 심볼 테이블에 변수 생성
+            symbol = symTable.createSymbol(lexeme);     // 심볼 테이블에 변수 생성
         }
         ParseTreeNode* identNode = new ParseTreeNode(IDENT);    // IDENT 노드 생성
         node->addChild(identNode);                              // IDENT 노드를 STATEMENT에 추가
@@ -94,7 +91,7 @@ ParseTreeNode* statement() {
 
             // 중복된 ASSIGN_OP 경고 처리
             while (nextToken == ASSIGN_OP) {
-                node->setStatus(WARNING, "(WARNING) Warning: \"중복 배정문 제거\"");
+                node->setStatus(WARNING, "(Warning) \"중복 배정 연산자(:=) 제거\"");
                 lexical();
             }
 
@@ -104,16 +101,17 @@ ParseTreeNode* statement() {
 
             if (exprNode->isDefined) {
                 identNode->setValue(exprNode->value);
+                symTable.updateSymbol(symbol->name, identNode->value);
             }
         }
         else {
             // ASSIGN_OP 누락 에러 처리
-            node->setStatus(ERROR, "(ERROR) Error: \"배정 연산자가 필요합니다.\"");
-        } 
+            node->setStatus(ERROR, "(Error) \"배정 연산자(:=)가 필요합니다.\"");
+        }
     } 
     else {
         // 식별자 누락 에러 처리
-        node->setStatus(ERROR, "(ERROR) Error: \"식별자가 필요합니다.\"");
+        node->setStatus(ERROR, "(Error) \"식별자가 필요합니다.\"");
     }
     printCounts();
     node->printMessage();
@@ -158,11 +156,21 @@ ParseTreeNode* term_tail(int leftValue) {
     if (nextToken == ADD_OP || nextToken == SUB_OP) {
         opCount++;
         int op = nextToken;
+        string opName = lexeme;
         node->addChild(new ParseTreeNode(nextToken));
         lexical();
 
-        while (nextToken == op) {
-            node->setStatus(WARNING, "(WARNING) Warning: \"중복 연산자(+|-) 제거\"");
+        while (nextToken == ADD_OP || nextToken == SUB_OP || nextToken == MULT_OP || nextToken == DIV_OP) {
+            if (op != nextToken) {
+                string message = "(Error) \"서로 다른 연산자 " + opName + ", " + lexeme + " 사용\"";
+                node->setStatus(ERROR, message);
+                break;
+            }
+            else {
+                string message = "(Warning) \"중복 연산자(" + (string) lexeme + ") 제거\"";
+                node->setStatus(WARNING, message);
+            }
+
             lexical();
         }
 
@@ -171,15 +179,13 @@ ParseTreeNode* term_tail(int leftValue) {
         ParseTreeNode* termTailNode = term_tail(termNode->value);
         node->addChild(termTailNode);
 
-        if (!termNode->isDefined || !termTailNode->isDefined) {
-            return node;
-        }
-
-        if (nextToken == ADD_OP) {
-            node->setValue(leftValue + termTailNode->value);
-        }
-        else {
-            node->setValue(leftValue - termTailNode->value);
+        if (termNode->isDefined && termTailNode->isDefined && node->status != -1) {
+            if (op == ADD_OP) {
+                node->setValue(leftValue + termTailNode->value);
+            }
+            else {
+                node->setValue(leftValue - termTailNode->value);
+            }
         }
     }
     else {
@@ -202,7 +208,7 @@ ParseTreeNode* factor() {
             node->addChild(new ParseTreeNode(RIGHT_PAREN));
             lexical();  // ')' 처리
             if (nextToken == RIGHT_PAREN) {
-                node->setStatus(ERROR, "(ERROR) Error: \"좌괄호 매칭 불가\"");
+                node->setStatus(ERROR, "(Error) \"좌괄호 매칭 불가\"");
                 return node;
             }
             if (expressionNode->isDefined) {
@@ -210,7 +216,7 @@ ParseTreeNode* factor() {
             }
         }
         else {
-            node->setStatus(ERROR, "(ERROR) Error: \"우괄호 매칭 불가\"");
+            node->setStatus(ERROR, "(Error) \"우괄호 매칭 불가\"");
             return node;
         }
     }
@@ -222,9 +228,9 @@ ParseTreeNode* factor() {
         Symbol* symbol = symTable.findSymbol(lexeme);
         if (symbol == nullptr) {
             symTable.createSymbol(lexeme);
-            node->setStatus(ERROR, "(ERROR) Error: \"정의되지 않은 변수가 참조됨\"");
+            node->setStatus(ERROR, "(Error) \"정의되지 않은 변수(" + (string) lexeme + ")가 참조됨\"");
         }
-        else {
+        else if (symbol->isDefined) {
             identNode->setValue(symbol->value);
             node->setValue(identNode->value);
         }
@@ -249,11 +255,21 @@ ParseTreeNode* factor_tail(int leftValue) {
     if (nextToken == MULT_OP || nextToken == DIV_OP) {
         opCount++;
         int op = nextToken;
+        string opName = lexeme;
         node->addChild(new ParseTreeNode(nextToken));
         lexical();
 
-        while (nextToken == op) {
-            node->setStatus(WARNING, "(WARNING) Warning: \"중복 연산자(*|/) 제거\"");
+        while (nextToken == ADD_OP || nextToken == SUB_OP || nextToken == MULT_OP || nextToken == DIV_OP) {
+            if (op != nextToken) {
+                string message = "(Error) \"서로 다른 연산자 " + opName + ", " + lexeme + " 사용\"";
+                node->setStatus(ERROR, message);
+                break;
+            }
+            else {
+                string message = "(Warning) \"중복 연산자(" + (string)lexeme + ") 제거\"";
+                node->setStatus(WARNING, message);
+            }
+
             lexical();
         }
 
@@ -262,15 +278,14 @@ ParseTreeNode* factor_tail(int leftValue) {
         ParseTreeNode* factorTailNode = factor_tail(factorNode->value);
         node->addChild(factorTailNode);
 
-        if (!factorNode->isDefined || !factorTailNode->isDefined) {
-            return node;
-        }
-
-        if (nextToken == MULT_OP) {
-            node->setValue(leftValue + factorTailNode->value);
-        }
-        else {
-            node->setValue(leftValue - factorTailNode->value);
+        if (factorNode->isDefined && factorTailNode->isDefined) {
+            if (op == MULT_OP) {
+                node->setValue(leftValue * factorTailNode->value);
+            }
+            else if (factorTailNode->value == 0)
+            {
+                node->setStatus(ERROR, "(Error) \"Division By Zero\"");
+            }
         }
     }
     else {
