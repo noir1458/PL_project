@@ -4,6 +4,7 @@
 // 어휘 분석기에서 사용되는 함수 및 변수에 대한 참조를 포함
 #include "LexicalAnalyzer.h"
 #include <cstring>
+#include <vector>
 #include <iostream>
 
 using namespace std;
@@ -80,40 +81,29 @@ struct SymbolTable {
     }
 };
 
-// 파싱 트리 노드 구조체
 struct ParseTreeNode {
-    int token;                  // 토큰 유형
-    int value;                  // 노드의 값
-    bool isDefined;             // 노드의 값이 초기화 되었는지 확인
-    int status;                 // 노드의 상태 (OK, WARNING, ERROR 등)
+    int token;                   // 토큰 유형
+    int value;                   // 노드의 값
+    bool isDefined;              // 노드의 값이 초기화 되었는지 확인
+    int status;                  // 노드의 상태 (OK, WARNING, ERROR 등)
     string message;              // 경고 및 오류 메시지 배열
-    ParseTreeNode* child;       // 현재 노드의 첫 번째 자식 (왼쪽 아래)
-    ParseTreeNode* sibling;     // 가장 가까운 형제 노드 (바로 오른쪽)
+    vector<ParseTreeNode*> children;  // 모든 자식 노드를 관리하는 벡터
 
     // 생성자
     ParseTreeNode(int token)
-        : token(token), value(0), isDefined(false), child(nullptr), sibling(nullptr), status(OK), message("(OK)") {}
+        : token(token), value(0), isDefined(false), status(OK), message("(OK)") {}
 
     // 자식 노드 추가 함수
     void addChild(ParseTreeNode* childNode) {
-        if (!child) {
-            child = childNode;  // 자식이 없으면 바로 추가
-        }
-        else {
-            ParseTreeNode* current = child;
-            while (current->sibling) {
-                current = current->sibling;
-            }
-            current->sibling = childNode;  // 마지막 자식의 sibling으로 추가
-        }
-
-        setStatus(childNode->status, childNode->message); // 이번에 추가된 자식 노드의 에러 우선순위가 더 높으면 복사
+        children.push_back(childNode);
+        // 상태 및 메시지 업데이트
+        setStatus(childNode->status, childNode->message);
     }
 
     // 값 설정 함수
     void setValue(int newValue) {
         value = newValue;
-        isDefined = true;  // 값이 설정되었으므로 정의된 것으로 표시
+        isDefined = true;
     }
 
     // 상태 및 메시지 설정 함수

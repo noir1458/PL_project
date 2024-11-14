@@ -30,9 +30,13 @@ SymbolTable symTable;
 // 파싱 트리 메모리 해제 함수
 void freeTree(ParseTreeNode* root) {
     if (!root) return;
-    freeTree(root->child);
-    freeTree(root->sibling);
-    delete root;
+
+    // 모든 자식 노드에 대해 재귀적으로 메모리 해제
+    for (ParseTreeNode* child : root->children) {
+        freeTree(child);
+    }
+
+    delete root; // 현재 노드 메모리 해제
 }
 
 // <program> → <statements>
